@@ -280,32 +280,16 @@ def augment_text(df):
 
     return df
 
-def test_aug(text, n):
-    print('augment_text')
-    import nltk
-    nltk.download('averaged_perceptron_tagger')
-    nltk.download('wordnet')
-    import nlpaug
-    import nlpaug.augmenter.word as naw
-    import math
-
-    aug = naw.SynonymAug(aug_src='wordnet',aug_max=10) # maximum 10 words to be changed
-
-    new_text_list = aug.augment(text,n=n)
-    print('type:', type(new_text_list))
-    if type(new_text_list) is str: 
-        new_text_list = [new_text_list]
-    for new_text in new_text_list:
-        print('new:', new_text)
-
 def main():
-    process_index = 'report' # merge, report, clean, train, aug, predict
+    process_index = 'aug' # merge, report, clean, ready, aug, predict
+
     excel_file = 'Deakin Requested Defect List (Projects 1-5).xlsx'
     csv_file = 'wiseworking.csv' # merge 3 excel sheets into 
-    file_report = 'wiseworking_report.csv' # clean data
+    file_report = 'wiseworking_report.csv' # data for reporting
     file_clean = 'wiseworking_clean.csv' # clean data
-    file_train = 'wiseworking_train.csv' # ready for modelling
-    file_aug = 'wiseworking_aug.csv' # data augmentation
+    file_ready = 'wiseworking_ready.csv' # ready for modelling
+    file_train = 'wiseworking_train.csv' # data augmentation
+    file_test = 'wiseworking_test.csv' # data augmentation
     file_predict = 'wiseworking_predict.csv' # after augmentation and only desc and category columns
 
     if process_index == 'merge':
@@ -318,7 +302,6 @@ def main():
         df = open_file(csv_file)
         df = extract_location (df)
         df.to_csv(file_report, index = False)
-        print('Finish')
 
     if process_index == 'clean':
         df = open_file(file_report)
@@ -326,23 +309,41 @@ def main():
         df = clean_description(df)
         df = calculate_response_days(df)
         df.to_csv(file_clean, index = False)
-        print('Finish')
 
-    if process_index == 'train':
+    if process_index == 'ready':
         df = open_file(file_clean)
         df = clean_category_for_model(df)
-        df.to_csv(file_train, index = False)
+        df.to_csv(file_ready, index = False)
 
     if process_index == 'aug':
-        df = open_file(file_train) 
-        df = augment_text(df)
+        df = open_file(file_ready) 
+
+        # divide data into train and test
+
+        X = df[['Description']]
+        y = df[['Category']]
+
+        X_train, X_test, y_train, y_test = train_test_split(X,y, test_size = 0.2, random_state = 1, stratify = df['Category'])
+
+        df_test = pd.DataFrame(columns=['Category', 'Description'])
+        df_test['Category'] = y_test
+        df_test['Description'] = X_test
+        df_test.to_csv(file_test, index = False)
+
+        df_train = pd.DataFrame(columns=['Category', 'Description'])
+        df_train['Category'] = y_train
+        df_train['Description'] = X_train
+
+        df = augment_text(df_train)
         get_insight_category(df)
-        df.to_csv(file_aug, index = False)
+        df.to_csv(file_train, index = False)
 
     if process_index == 'predict':
         df = open_file(file_clean)
         df = make_data_for_prediction (df)
         df.to_csv(file_predict, index = False)
+
+    print('Finish ', process_index)
 
 def test_extract_nouns():
     nlp = spacy.load("en_core_web_sm")
