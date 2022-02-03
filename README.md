@@ -1,7 +1,7 @@
 # Building Defect Repository
 
 The first task is to do feasibility study to explore getting building defect data online using Web Scraping techniques. 
-I used Python libraries such as Http requests, BeautifulSoups and Selenium.
+I used Python libraries such as Http requests, BeautifulSoups and Selenium. Code: (https://github.com/wellia/WebScrapping)
 
 The second task is to build a model to predict the building defect categories. 
 - I performed data analysis. The result was inconsistent data entry and highly imbalanced data
